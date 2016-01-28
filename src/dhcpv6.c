@@ -471,11 +471,11 @@ static void dhcpv6_send(enum dhcpv6_msg type, uint8_t trid[3], uint32_t ecs)
 
 	size_t cnt = IOV_TOTAL;
 	if (type == DHCPV6_MSG_INFO_REQ) {
-		cnt = 9;
+		cnt = IOV_USER_CLASS + 1;
 		iov[IOV_ORO_REFRESH].iov_len = sizeof(oro_refresh);
 		hdr.oro_len = htons(oro_len + sizeof(oro_refresh));
 	} else if (!request_prefix) {
-		cnt = 13;
+		cnt = IOV_IA_NA + 1;
 	}
 
 	// Disable IAs if not used
