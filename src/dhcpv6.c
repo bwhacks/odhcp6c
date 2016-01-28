@@ -702,10 +702,8 @@ static bool dhcpv6_response_is_valid(const void *buf, ssize_t len,
 				continue;
 
 			md5_ctx_t md5;
-			uint8_t serverhash[16], secretbytes[64];
-			uint32_t hash[4];
-			memcpy(serverhash, r->key, sizeof(serverhash));
-			memset(r->key, 0, sizeof(r->key));
+			uint8_t secretbytes[64];
+			uint32_t hash[4] = {0,};
 
 			memset(secretbytes, 0, sizeof(secretbytes));
 			memcpy(secretbytes, reconf_key, sizeof(reconf_key));
@@ -715,7 +713,9 @@ static bool dhcpv6_response_is_valid(const void *buf, ssize_t len,
 
 			md5_begin(&md5);
 			md5_hash(secretbytes, sizeof(secretbytes), &md5);
-			md5_hash(buf, len, &md5);
+			md5_hash(buf, r->key - (const uint8_t *)buf, &md5);
+			md5_hash(hash, 16, &md5);
+			md5_hash(r->key + 16, (const uint8_t *)buf + len - (r->key + 16), &md5);
 			md5_end(hash, &md5);
 
 			for (size_t i = 0; i < sizeof(secretbytes); ++i) {
@@ -728,7 +728,7 @@ static bool dhcpv6_response_is_valid(const void *buf, ssize_t len,
 			md5_hash(hash, 16, &md5);
 			md5_end(hash, &md5);
 
-			rcauth_ok = !memcmp(hash, serverhash, sizeof(hash));
+			rcauth_ok = !memcmp(hash, r->key, sizeof(hash));
 		} else if (otype == DHCPV6_OPT_RECONF_MESSAGE && olen == 1) {
 			rcmsg = odata[0];
 		} else if ((otype == DHCPV6_OPT_IA_PD || otype == DHCPV6_OPT_IA_NA)) {
